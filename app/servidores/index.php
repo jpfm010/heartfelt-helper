@@ -10,7 +10,7 @@ if($lista){$lista->data_seek(0);while($z=$lista->fetch_assoc()){@$s=fsockopen($z
 </style>
 <div class="breadcrumb clearfix"><ul><li><a href="index.php?app=Dashboard">Dashboard</a></li><li class="active">Servidores</li></ul></div>
 <div class="mrn">
-<div class="mrn-head"><div><h1>Servidores MikroTik</h1><p>Monitoramento e gerenciamento dos roteadores do provedor.</p></div><a href="?app=CadastroServidor" class="btn btn-primary"><i class="fa fa-plus"></i> Novo servidor</a></div>
+<div class="mrn-head"><div><h1>Servidores MikroTik</h1><p>Monitoramento e gerenciamento dos roteadores do provedor.</p></div><a href="?app=CadastroServidor" class="btn btn-primary"><i class="fa fa-plus"></i> Novo servidor</a> <a href="?app=Monitoramento" class="btn btn-info"><i class="fa fa-line-chart"></i> Monitoramento</a></div>
 <div class="mrn-stats"><div class="mrn-stat"><span>Total de servidores</span><b><?php echo $total;?></b></div><div class="mrn-stat"><span>Online</span><b class="text-success"><?php echo $online;?></b></div><div class="mrn-stat"><span>Sem comunicação</span><b class="text-danger"><?php echo $offline;?></b></div></div>
 <div class="mrn-box"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h3 style="margin:0">Infraestrutura MikroTik</h3><input id="mrSrvBusca" class="form-control" style="max-width:330px" placeholder="Buscar servidor ou IP..."></div>
 <div style="overflow:auto"><table class="table table-striped table-hover mrn-table" id="table-1"><thead><tr><th>Servidor</th><th>IP</th><th>Login</th><th>Tipo</th><th>Conectividade</th><th>Ações</th></tr></thead><tbody>

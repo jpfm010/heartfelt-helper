@@ -51,6 +51,10 @@ if($step===2&&!is_file($lock)){
         foreach($files as $file){
           $sql=@file_get_contents($file);
           if($sql===false){$falhas++;continue;}
+          // O dump original pode conter CREATE DATABASE/USE myrouter.
+          // O instalador deve importar sempre no banco escolhido pelo usuário.
+          $sql=preg_replace('/^\\s*CREATE\\s+DATABASE(?:\\s+IF\\s+NOT\\s+EXISTS)?\\s+[^;]+;\\s*/im','',$sql);
+          $sql=preg_replace('/^\\s*USE\\s+[^;]+;\\s*/im','',$sql);
           if(!$x->multi_query($sql))$falhas++;
           do{$res=$x->store_result();if($res)$res->free();if($x->errno)$falhas++;$total++;}while($x->more_results()&&$x->next_result());
         }
@@ -58,6 +62,11 @@ if($step===2&&!is_file($lock)){
         if($falhas)$messages[]=$falhas.' arquivo(s)/bloco(s) retornaram aviso; confira a base após a instalação.';
       }
       if(!$errors){
+        // Validação final: o schema principal precisa existir no banco escolhido.
+        $check=$x->query("SHOW TABLES LIKE 'assinaturas'");
+        if(!$check || $check->num_rows===0){
+          $errors[]='A importação terminou, mas a tabela assinaturas não foi encontrada no banco selecionado.';
+        }else{
         $key=bin2hex(random_bytes(32));
         $env=['MYROUTER_DB_HOST'=>$h,'MYROUTER_DB_PORT'=>(string)$port,'MYROUTER_DB_USER'=>$u,'MYROUTER_DB_PASS'=>$p,'MYROUTER_DB_NAME'=>$n,'MYROUTER_APP_KEY'=>$key];
         if(!envwrite($root.'/.env',$env))$errors[]='Não foi possível criar o arquivo .env. Verifique permissão de escrita.';
@@ -65,6 +74,7 @@ if($step===2&&!is_file($lock)){
           @chmod($root.'/.env',0600);
           if(@file_put_contents($lock,date('c')."\n",LOCK_EX)===false)$errors[]='Não foi possível criar o bloqueio do instalador.';
           else{$messages[]='Instalação concluída com sucesso.';$step=4;}
+        }
         }
       }
       $x->close();

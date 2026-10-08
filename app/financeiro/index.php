@@ -1,0 +1,28 @@
+<?php
+if($permissao['f1'] == S){
+$ano=(int)date('Y');$mes=(int)date('m');$empresa=(int)$_SESSION['empresa'];
+function mf_sum($db,$sql){$r=$db->query($sql);if(!$r)return 0;$x=$r->fetch_assoc();return (float)($x['total']??0);}
+$recebido=mf_sum($mysqli,"SELECT SUM(valor) total FROM financeiro WHERE ano='$ano' AND empresa='$empresa' AND situacao='P'");
+$aberto=mf_sum($mysqli,"SELECT SUM(valor) total FROM financeiro WHERE ano='$ano' AND empresa='$empresa' AND situacao='N'");
+$cancelado=mf_sum($mysqli,"SELECT SUM(valor) total FROM financeiro WHERE ano='$ano' AND empresa='$empresa' AND situacao='C'");
+$qtA=(int)mf_sum($mysqli,"SELECT COUNT(*) total FROM financeiro WHERE ano='$ano' AND empresa='$empresa' AND situacao='N'");
+$qtV=(int)mf_sum($mysqli,"SELECT COUNT(*) total FROM financeiro WHERE ano='$ano' AND empresa='$empresa' AND situacao='B'");
+?>
+<style>
+.mrf{font-family:Arial,sans-serif}.mrf-head{background:linear-gradient(135deg,#17283f,#1769bd);color:#fff;border-radius:12px;padding:22px;margin-bottom:15px;display:flex;justify-content:space-between;align-items:center}.mrf-head h1{margin:0;font-size:25px}.mrf-head p{margin:4px 0 0;opacity:.8}.mrf-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:15px}.mrf-stat{background:#fff;border:1px solid #e5ebf3;border-radius:11px;padding:15px}.mrf-stat span{display:block;color:#718096;font-size:11px}.mrf-stat b{display:block;font-size:21px;margin-top:5px;color:#17283f}.mrf-box{background:#fff;border:1px solid #e5ebf3;border-radius:12px;padding:15px;box-shadow:0 2px 12px #17283f0d}.mrf-toolbar{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:12px}.mrf-toolbar input{max-width:340px}.mrf-table th{background:#f6f9fc;color:#526174;font-size:12px}.mrf-table td{vertical-align:middle}.mf-badge{padding:5px 9px;border-radius:18px;font-size:10px;font-weight:bold}.mf-p{background:#e7f8ef;color:#168a5d}.mf-n{background:#fff3d8;color:#ad7200}.mf-b{background:#ffe9e9;color:#d23c3c}.mf-c{background:#edf0f4;color:#667085}@media(max-width:800px){.mrf-stats{grid-template-columns:repeat(2,1fr)}.mrf-head,.mrf-toolbar{display:block}}@media(max-width:500px){.mrf-stats{grid-template-columns:1fr}}
+</style>
+<div class="breadcrumb clearfix"><ul><li><a href="index.php?app=Dashboard">Dashboard</a></li><li class="active">Financeiro</li></ul></div>
+<div class="mrf">
+<div class="mrf-head"><div><h1>Financeiro</h1><p>Controle de recebimentos, faturas e inadimplência — <?php echo $ano;?></p></div><a href="?app=CadastroFinanceiro" class="btn btn-primary"><i class="fa fa-plus"></i> Nova fatura</a></div>
+<div class="mrf-stats"><div class="mrf-stat"><span>Recebido no ano</span><b class="text-success">R$ <?php echo number_format($recebido,2,',','.');?></b></div><div class="mrf-stat"><span>Em aberto</span><b class="text-warning">R$ <?php echo number_format($aberto,2,',','.');?></b><small><?php echo $qtA;?> faturas</small></div><div class="mrf-stat"><span>Vencidas / bloqueadas</span><b class="text-danger"><?php echo $qtV;?></b></div><div class="mrf-stat"><span>Cancelado</span><b>R$ <?php echo number_format($cancelado,2,',','.');?></b></div></div>
+<div class="mrf-box"><div class="mrf-toolbar"><h3 style="margin:0">Faturas de <?php echo $ano;?></h3><input id="mrFinBusca" class="form-control" placeholder="Buscar fatura, cliente ou plano..."></div>
+<div style="overflow:auto"><table class="table table-striped table-hover mrf-table" id="table-1"><thead><tr><th>Fatura</th><th>Cliente</th><th>Plano</th><th>Valor</th><th>Vencimento</th><th>Status</th><th>Ações</th></tr></thead><tbody>
+<?php
+$q=$mysqli->query("SELECT f.*,c.nome cliente_nome,p.nome plano_nome FROM financeiro f LEFT JOIN clientes c ON c.id=f.cliente LEFT JOIN planos p ON p.id=f.plano WHERE f.ano='$ano' AND f.empresa='$empresa' ORDER BY f.ano DESC,f.mes DESC,f.dia DESC,f.id DESC LIMIT 500");
+if($q) while($f=$q->fetch_assoc()){
+$s=$f['situacao']??'N';$cl=$s==='P'?'mf-p':($s==='B'?'mf-b':($s==='C'?'mf-c':'mf-n'));$txt=$s==='P'?'PAGO':($s==='B'?'VENCIDO':($s==='C'?'CANCELADO':'EM ABERTO'));$v=(float)$f['valor'];
+?>
+<tr><td><strong>#<?php echo (int)$f['id'];?></strong></td><td><?php echo htmlspecialchars($f['cliente_nome']??'',ENT_QUOTES,'UTF-8');?></td><td><?php echo htmlspecialchars($f['plano_nome']??'',ENT_QUOTES,'UTF-8');?></td><td>R$ <?php echo number_format($v,2,',','.');?></td><td><?php echo htmlspecialchars(($f['dia']??'').'/'.($f['mes']??'').'/'.($f['ano']??''),ENT_QUOTES,'UTF-8');?></td><td><span class="mf-badge <?php echo $cl;?>"><?php echo $txt;?></span></td><td><a href="?app=FaturaEDT&id=<?php echo base64_encode($f['id']);?>" class="btn btn-info btn-xs" title="Editar"><i class="fa fa-pencil"></i></a><?php if(!empty($f['linkGerencia'])){?> <a href="<?php echo htmlspecialchars($f['linkGerencia'],ENT_QUOTES,'UTF-8');?>" target="_blank" class="btn btn-success btn-xs" title="Abrir cobrança"><i class="fa fa-external-link"></i></a><?php }else{?> <a href="boleto.php?cliente=<?php echo base64_encode($f['cliente']);?>&fatura=<?php echo base64_encode($f['id']);?>&tipo=1" target="_blank" class="btn btn-warning btn-xs" title="Boleto"><i class="fa fa-barcode"></i></a><?php }?></td></tr>
+<?php } ?></tbody></table></div></div></div>
+<script>document.getElementById('mrFinBusca')?.addEventListener('input',function(){var q=this.value.toLowerCase();document.querySelectorAll('#table-1 tbody tr').forEach(function(r){r.style.display=r.innerText.toLowerCase().indexOf(q)>=0?'':'none';});});</script>
+<?php } else { ?><div class="alert alert-danger"><strong>Permissão negada!</strong> Você não possui permissão para este módulo.</div><?php } ?>
